@@ -4,13 +4,15 @@
 
 package org.itson.pos.cenaduria;
 
+import presentacion.ConsolaPrueba;
+
 /**
  *
  * @author angel
  */
-public class POSCenaduria {
+public class Main {
 
     public static void main(String[] args) {
-        System.out.println("Hello World!");
+        ConsolaPrueba.ejecutar();
     }
 }
