@@ -1,18 +1,49 @@
 package persistencia.entidades;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import persistencia.enums.CategoriaInsumo;
 import persistencia.enums.EstadoInsumo;
 import persistencia.enums.UnidadInsumo;
 
+@Entity
+@Table(name = "insumos")
 public class Insumo {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "nombre_insumo", nullable = false, length = 100)
     private String nombreInsumo;
+
+    @Column(nullable = false)
     private float stock;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "estado_insumo", length = 20)
     private EstadoInsumo estadoInsumo;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "unidad_insumo", nullable = false, length = 20)
     private UnidadInsumo unidadInsumo;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
     private CategoriaInsumo categoria;
-    private Administrador administrador; // 1 Administrador -> * Insumo
+
+    // 1 Administrador -> * Insumo
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "id_administrador", nullable = false)
+    private Administrador administrador;
 
     public Insumo() {
     }
@@ -106,4 +137,3 @@ public class Insumo {
                 '}';
     }
 }
-

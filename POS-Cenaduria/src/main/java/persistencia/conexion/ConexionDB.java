@@ -1,19 +1,27 @@
 package persistencia.conexion;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.Persistence;
 
 public class ConexionDB {
 
-    private static final String URL = "jdbc:mysql://localhost:3306/cenaduria";
-    private static final String USUARIO = "root";
-    private static final String PASSWORD = "tu_password";
+    private static final String UNIDAD_PERSISTENCIA = "cenaduriaPU";
+    private static EntityManagerFactory emf;
 
     private ConexionDB() {
     }
 
-    public static Connection obtenerConexion() throws SQLException {
-        return DriverManager.getConnection(URL, USUARIO, PASSWORD);
+    public static synchronized EntityManager getEntityManager() {
+        if (emf == null || !emf.isOpen()) {
+            emf = Persistence.createEntityManagerFactory(UNIDAD_PERSISTENCIA);
+        }
+        return emf.createEntityManager();
+    }
+
+    public static synchronized void cerrar() {
+        if (emf != null && emf.isOpen()) {
+            emf.close();
+        }
     }
 }

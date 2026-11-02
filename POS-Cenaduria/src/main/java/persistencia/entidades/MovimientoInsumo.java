@@ -1,20 +1,43 @@
 package persistencia.entidades;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import java.time.LocalDateTime;
 import persistencia.enums.TipoMovimiento;
 
-import java.time.LocalDateTime;
-
+@Entity
+@Table(name = "movimientos_insumo")
 public class MovimientoInsumo {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
     private TipoMovimiento tipo;
+
+    @Column(nullable = false)
     private LocalDateTime fecha;
+
+    @Column(nullable = false)
     private float cantidad;
-    private Insumo insumo; // * Movimiento -> 1 Insumo
+
+    // * Movimiento -> 1 Insumo
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "id_insumo", nullable = false)
+    private Insumo insumo;
 
     public MovimientoInsumo() {
     }
-
 
     public MovimientoInsumo(Long id, TipoMovimiento tipo, LocalDateTime fecha, float cantidad, Insumo insumo) {
         this.id = id;
@@ -67,6 +90,10 @@ public class MovimientoInsumo {
         return insumo;
     }
 
+    public void setInsumo(Insumo insumo) {
+        this.insumo = insumo;
+    }
+
     @Override
     public String toString() {
         return "MovimientoInsumo{" +
@@ -77,10 +104,4 @@ public class MovimientoInsumo {
                 ", insumo=" + insumo +
                 '}';
     }
-
-    public void setInsumo(Insumo insumo) {
-        this.insumo = insumo;
-    }
-
-
 }
