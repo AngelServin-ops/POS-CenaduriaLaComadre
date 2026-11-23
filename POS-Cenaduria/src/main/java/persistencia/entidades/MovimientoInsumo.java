@@ -10,8 +10,10 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import java.time.LocalDateTime;
+import persistencia.enums.MotivoMovimiento;
 import persistencia.enums.TipoMovimiento;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "movimientos_insumo")
@@ -25,32 +27,40 @@ public class MovimientoInsumo {
     @Column(nullable = false, length = 20)
     private TipoMovimiento tipo;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private MotivoMovimiento motivo;
+
     @Column(nullable = false)
     private LocalDateTime fecha;
 
     @Column(nullable = false)
     private float cantidad;
 
+    @Column(length = 255)
+    private String observacion;
+
     // * Movimiento -> 1 Insumo
     @ManyToOne(optional = false)
     @JoinColumn(name = "id_insumo", nullable = false)
     private Insumo insumo;
 
+    // * Movimiento -> 1 Usuario (quién lo realizó)
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "id_usuario", nullable = false)
+    private Usuario usuario;
+
     public MovimientoInsumo() {
     }
 
-    public MovimientoInsumo(Long id, TipoMovimiento tipo, LocalDateTime fecha, float cantidad, Insumo insumo) {
-        this.id = id;
+    public MovimientoInsumo(TipoMovimiento tipo, MotivoMovimiento motivo, float cantidad,
+                            String observacion, Insumo insumo, Usuario usuario) {
         this.tipo = tipo;
-        this.fecha = fecha;
+        this.motivo = motivo;
         this.cantidad = cantidad;
+        this.observacion = observacion;
         this.insumo = insumo;
-    }
-
-    public MovimientoInsumo(TipoMovimiento tipo, float cantidad, Insumo insumo) {
-        this.tipo = tipo;
-        this.cantidad = cantidad;
-        this.insumo = insumo;
+        this.usuario = usuario;
         this.fecha = LocalDateTime.now();
     }
 
@@ -70,6 +80,14 @@ public class MovimientoInsumo {
         this.tipo = tipo;
     }
 
+    public MotivoMovimiento getMotivo() {
+        return motivo;
+    }
+
+    public void setMotivo(MotivoMovimiento motivo) {
+        this.motivo = motivo;
+    }
+
     public LocalDateTime getFecha() {
         return fecha;
     }
@@ -86,6 +104,14 @@ public class MovimientoInsumo {
         this.cantidad = cantidad;
     }
 
+    public String getObservacion() {
+        return observacion;
+    }
+
+    public void setObservacion(String observacion) {
+        this.observacion = observacion;
+    }
+
     public Insumo getInsumo() {
         return insumo;
     }
@@ -94,14 +120,24 @@ public class MovimientoInsumo {
         this.insumo = insumo;
     }
 
+    public Usuario getUsuario() {
+        return usuario;
+    }
+
+    public void setUsuario(Usuario usuario) {
+        this.usuario = usuario;
+    }
+
     @Override
     public String toString() {
         return "MovimientoInsumo{" +
                 "id=" + id +
                 ", tipo=" + tipo +
+                ", motivo=" + motivo +
                 ", fecha=" + fecha +
                 ", cantidad=" + cantidad +
-                ", insumo=" + insumo +
+                ", insumo=" + (insumo != null ? insumo.getNombre() : null) +
+                ", usuario=" + (usuario != null ? usuario.getNombreUsuario() : null) +
                 '}';
     }
 }

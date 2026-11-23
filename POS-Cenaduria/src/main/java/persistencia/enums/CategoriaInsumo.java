@@ -1,5 +1,5 @@
 package persistencia.enums;
 
 public enum CategoriaInsumo {
-    CARNES, VERDURAS
+    CARNES, VERDURAS, LACTEOS, ABARROTES, BEBIDAS, DESECHABLES
 }

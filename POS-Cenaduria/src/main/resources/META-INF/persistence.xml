@@ -7,9 +7,15 @@
         <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
 
         <class>persistencia.entidades.Usuario</class>
-        <class>persistencia.entidades.Administrador</class>
         <class>persistencia.entidades.Insumo</class>
         <class>persistencia.entidades.MovimientoInsumo</class>
+        <class>persistencia.entidades.Platillo</class>
+        <class>persistencia.entidades.VariacionPlatillo</class>
+        <class>persistencia.entidades.Pedido</class>
+        <class>persistencia.entidades.DetallePedido</class>
+        <class>persistencia.entidades.Pago</class>
+        <class>persistencia.entidades.PartidaPago</class>
+        <class>persistencia.entidades.ConfiguracionNegocio</class>
 
         <exclude-unlisted-classes>true</exclude-unlisted-classes>
 
@@ -21,7 +27,7 @@
             <property name="jakarta.persistence.jdbc.password" value=""/>
 
             <property name="hibernate.hbm2ddl.auto" value="update"/>
-            <property name="hibernate.show_sql" value="true"/>
+            <property name="hibernate.show_sql" value="false"/>
             <property name="hibernate.format_sql" value="true"/>
         </properties>
     </persistence-unit>

@@ -15,6 +15,7 @@ import javax.swing.event.DocumentListener;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableRowSorter;
+import negocio.reglas.EvaluadorStock;
 import persistencia.entidades.Insumo;
 import persistencia.enums.EstadoInsumo;
 import persistencia.enums.UnidadInsumo;
@@ -23,12 +24,14 @@ public class PanelInventario extends JPanel {
 
     private static final Color NARANJA = new Color(0xD96A29);
     private static final Color FONDO = new Color(0xF7F1EC);
-    private static final Color GRIS_LINEA = new Color(0xE5E5E5);
+    private static final Color GRIS_LINEA = Estilos.GRIS_LINEA;
 
-    private static final Font TITULO = new Font("Georgia", Font.BOLD, 22);
-    private static final Font TEXTO_TABLA = new Font("Georgia", Font.PLAIN, 15);
-    private static final Font ENCABEZADO = new Font("Georgia", Font.BOLD, 16);
+    // Mismas fuentes que Punto de venta (Georgia dibujaba los números como "ooo6")
+    private static final Font TITULO = Estilos.TITULO;
+    private static final Font TEXTO_TABLA = Estilos.TEXTO.deriveFont(15f);
+    private static final Font ENCABEZADO = Estilos.ENCABEZADO_TABLA.deriveFont(16f);
 
+    private static final EvaluadorStock EVALUADOR = new EvaluadorStock();
     private final ModeloInsumos modelo = new ModeloInsumos();
     private JTable tabla;
     private TableRowSorter<ModeloInsumos> sorter;
@@ -37,6 +40,7 @@ public class PanelInventario extends JPanel {
     private Runnable accionAgregar = () -> { };
     private Consumer<Insumo> accionEditar = i -> { };
     private Consumer<Insumo> accionEliminar = i -> { };
+    private Consumer<Insumo> accionMoverStock = i -> { };
 
     public PanelInventario() {
         setLayout(new BorderLayout(0, 18));
@@ -64,6 +68,11 @@ public class PanelInventario extends JPanel {
         this.accionEliminar = accion;
     }
 
+    /** Botón "Mover stock" (flechas): registrar consumo del día, compra, merma o ajuste. */
+    public void setAccionMoverStock(Consumer<Insumo> accion) {
+        this.accionMoverStock = accion;
+    }
+
     // ------------------------------------------------------------ Parte superior
     private JPanel crearParteSuperior() {
         JPanel superior = new JPanel(new BorderLayout(0, 14));
@@ -79,7 +88,7 @@ public class PanelInventario extends JPanel {
 
         BotonRedondeado btnAgregar = new BotonRedondeado("+ Agregar Insumo", NARANJA);
         btnAgregar.setForeground(Color.WHITE);
-        btnAgregar.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        btnAgregar.setFont(Estilos.BOTON);
         btnAgregar.setPreferredSize(new Dimension(160, 36));
         btnAgregar.addActionListener(e -> accionAgregar.run());
         barra.add(btnAgregar, BorderLayout.EAST);
@@ -110,9 +119,10 @@ public class PanelInventario extends JPanel {
                 g2.dispose();
             }
         };
-        txt.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        txt.setFont(Estilos.CAMPO);
         txt.setBackground(Color.WHITE);
-        txt.setBorder(new EmptyBorder(8, 12, 8, 40));
+        txt.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(Estilos.BORDE_CAMPO, 1, true), new EmptyBorder(7, 12, 7, 40)));
         txt.setPreferredSize(new Dimension(0, 36));
 
         txt.getDocument().addDocumentListener(new DocumentListener() {
@@ -133,12 +143,14 @@ public class PanelInventario extends JPanel {
     private JPanel crearTarjetaTabla() {
         PanelRedondeado tarjeta = new PanelRedondeado(14, Color.WHITE);
         tarjeta.setLayout(new BorderLayout());
-        tarjeta.setBorder(new EmptyBorder(6, 6, 6, 6));
+        tarjeta.setBorder(new EmptyBorder(4, 12, 8, 12));
 
         tabla = new JTable(modelo);
         sorter = new TableRowSorter<>(modelo);
         tabla.setRowSorter(sorter);
-        tabla.setRowHeight(40);
+        tabla.setRowHeight(42);
+        tabla.setRowSelectionAllowed(false); // sin la fila "seleccionada" de Swing
+        tabla.setBorder(BorderFactory.createEmptyBorder());
         tabla.setShowVerticalLines(false);
         tabla.setShowHorizontalLines(true);
         tabla.setGridColor(GRIS_LINEA);
@@ -149,31 +161,36 @@ public class PanelInventario extends JPanel {
         tabla.setBackground(Color.WHITE);
         tabla.setFillsViewportHeight(true);
 
-        DefaultTableCellRenderer encabezado = new DefaultTableCellRenderer();
-        encabezado.setHorizontalAlignment(SwingConstants.CENTER);
-        encabezado.setFont(ENCABEZADO);
-        encabezado.setBackground(Color.WHITE);
-        encabezado.setBorder(new EmptyBorder(10, 0, 10, 0));
-        tabla.getTableHeader().setDefaultRenderer(encabezado);
-        tabla.getTableHeader().setReorderingAllowed(false);
-        tabla.getTableHeader().setBorder(null);
+        // Ojo: DefaultTableCellRenderer reinicia fuente y borde en cada celda;
+        // por eso el estilo se aplica DESPUÉS de llamar a super (antes se perdía).
+        DefaultTableCellRenderer baseEncabezado = new DefaultTableCellRenderer();
+        javax.swing.table.JTableHeader header = tabla.getTableHeader();
+        header.setDefaultRenderer((t, v, s, f, r, c) -> {
+            JLabel l = (JLabel) baseEncabezado.getTableCellRendererComponent(t, v, false, false, r, c);
+            l.setFont(ENCABEZADO);
+            l.setForeground(Color.BLACK);
+            l.setBackground(Color.WHITE);
+            l.setOpaque(true);
+            l.setHorizontalAlignment(SwingConstants.CENTER);
+            l.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, GRIS_LINEA));
+            return l;
+        });
+        header.setPreferredSize(new Dimension(0, 48));
+        header.setBackground(Color.WHITE);
+        header.setReorderingAllowed(false);
+        header.setResizingAllowed(false);
+        header.setBorder(BorderFactory.createEmptyBorder());
 
-        DefaultTableCellRenderer centrado = new DefaultTableCellRenderer();
-        centrado.setHorizontalAlignment(SwingConstants.CENTER);
-        centrado.setFont(TEXTO_TABLA);
-
-        DefaultTableCellRenderer izquierda = new DefaultTableCellRenderer();
-        izquierda.setHorizontalAlignment(SwingConstants.LEFT);
-        izquierda.setFont(TEXTO_TABLA);
-        izquierda.setBorder(new EmptyBorder(0, 14, 0, 0));
+        DefaultTableCellRenderer centrado = new RenderTexto(SwingConstants.CENTER, 0);
+        DefaultTableCellRenderer izquierda = new RenderTexto(SwingConstants.LEFT, 18);
 
         tabla.getColumnModel().getColumn(0).setCellRenderer(izquierda);
         tabla.getColumnModel().getColumn(1).setCellRenderer(centrado);
         tabla.getColumnModel().getColumn(2).setCellRenderer(centrado);
         tabla.getColumnModel().getColumn(3).setCellRenderer(new RenderEstado());
         tabla.getColumnModel().getColumn(4).setCellRenderer(new RenderAcciones());
-        tabla.getColumnModel().getColumn(4).setMaxWidth(110);
-        tabla.getColumnModel().getColumn(4).setMinWidth(110);
+        tabla.getColumnModel().getColumn(4).setMaxWidth(150);
+        tabla.getColumnModel().getColumn(4).setMinWidth(150);
 
         tabla.addMouseListener(new MouseAdapter() {
             @Override
@@ -183,13 +200,11 @@ public class PanelInventario extends JPanel {
                 if (fila < 0 || col != 4) {
                     return;
                 }
-                Rectangle celda = tabla.getCellRect(fila, col, false);
-                boolean editar = e.getX() < celda.x + celda.width / 2;
                 Insumo insumo = modelo.getInsumo(tabla.convertRowIndexToModel(fila));
-                if (editar) {
-                    accionEditar.accept(insumo);
-                } else {
-                    accionEliminar.accept(insumo);
+                switch (accionEn(e, fila)) {
+                    case 0 -> accionMoverStock.accept(insumo);
+                    case 1 -> accionEditar.accept(insumo);
+                    default -> accionEliminar.accept(insumo);
                 }
             }
         });
@@ -201,14 +216,21 @@ public class PanelInventario extends JPanel {
                 tabla.setCursor(sobreAcciones
                         ? Cursor.getPredefinedCursor(Cursor.HAND_CURSOR)
                         : Cursor.getDefaultCursor());
+                tabla.setToolTipText(sobreAcciones
+                        ? new String[]{"Mover stock", "Editar", "Eliminar"}[accionEn(e, tabla.rowAtPoint(e.getPoint()))]
+                        : null);
             }
         });
 
-        JScrollPane scroll = new JScrollPane(tabla);
-        scroll.setBorder(null);
-        scroll.getViewport().setBackground(Color.WHITE);
-        tarjeta.add(scroll, BorderLayout.CENTER);
+        tarjeta.add(Estilos.scroll(tabla), BorderLayout.CENTER);
         return tarjeta;
+    }
+
+    /** 0 = mover stock, 1 = editar, 2 = eliminar, según en qué tercio de la celda se hizo clic. */
+    private int accionEn(MouseEvent e, int fila) {
+        Rectangle celda = tabla.getCellRect(fila, 4, false);
+        int x = e.getX() - celda.x;
+        return Math.min(2, x * 3 / Math.max(1, celda.width));
     }
 
     // ------------------------------------------------------------ Utilidades
@@ -229,6 +251,8 @@ public class PanelInventario extends JPanel {
         }
         return switch (u) {
             case KG -> "kg";
+            case GRAMO -> "g";
+            case LITRO -> "L";
             case PIEZA -> "pzs";
             case PAQUETE -> "paquetes";
         };
@@ -261,10 +285,10 @@ public class PanelInventario extends JPanel {
         public Object getValueAt(int fila, int col) {
             Insumo i = datos.get(fila);
             return switch (col) {
-                case 0 -> i.getNombreInsumo();
+                case 0 -> i.getNombre();
                 case 1 -> textoStock(i.getStock());
-                case 2 -> textoUnidad(i.getUnidadInsumo());
-                case 3 -> i.getEstadoInsumo();
+                case 2 -> textoUnidad(i.getUnidad());
+                case 3 -> EVALUADOR.evaluar(i);
                 default -> null;
             };
         }
@@ -276,26 +300,54 @@ public class PanelInventario extends JPanel {
         @Override
         public Component getTableCellRendererComponent(JTable t, Object v, boolean sel,
                                                        boolean foco, int fila, int col) {
-            super.getTableCellRendererComponent(t, "", sel, foco, fila, col);
+            super.getTableCellRendererComponent(t, "", false, false, fila, col);
+            setBackground(Color.WHITE);
+            setBorder(null);
             setHorizontalAlignment(SwingConstants.CENTER);
             setIcon(new PuntoIcon(colorEstado((EstadoInsumo) v)));
             return this;
         }
     }
 
-    private static class RenderAcciones extends DefaultTableCellRenderer {
+    /** Texto de celda con la fuente y el margen del Figma. */
+    private static class RenderTexto extends DefaultTableCellRenderer {
 
-        private final JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 8));
+        private final int alineacion;
+        private final int margen;
 
-        RenderAcciones() {
-            panel.add(new JLabel(new EditarIcon()));
-            panel.add(new JLabel(new BorrarIcon()));
+        RenderTexto(int alineacion, int margen) {
+            this.alineacion = alineacion;
+            this.margen = margen;
         }
 
         @Override
         public Component getTableCellRendererComponent(JTable t, Object v, boolean sel,
                                                        boolean foco, int fila, int col) {
-            panel.setBackground(sel ? t.getSelectionBackground() : Color.WHITE);
+            super.getTableCellRendererComponent(t, v, false, false, fila, col);
+            setFont(TEXTO_TABLA);
+            setForeground(Color.BLACK);
+            setBackground(Color.WHITE);
+            setHorizontalAlignment(alineacion);
+            setBorder(new EmptyBorder(0, margen, 0, 0));
+            return this;
+        }
+    }
+
+    private static class RenderAcciones extends DefaultTableCellRenderer {
+
+        // Un tercio de la celda por ícono: así el clic coincide con lo que se ve
+        private final JPanel panel = new JPanel(new GridLayout(1, 3));
+
+        RenderAcciones() {
+            panel.add(new JLabel(new MoverIcon(), SwingConstants.CENTER));
+            panel.add(new JLabel(new EditarIcon(), SwingConstants.CENTER));
+            panel.add(new JLabel(new BorrarIcon(), SwingConstants.CENTER));
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable t, Object v, boolean sel,
+                                                       boolean foco, int fila, int col) {
+            panel.setBackground(Color.WHITE);
             return panel;
         }
     }
@@ -316,6 +368,26 @@ public class PanelInventario extends JPanel {
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             g2.setColor(color);
             g2.fillOval(x, y, 18, 18);
+            g2.dispose();
+        }
+    }
+
+    /** Flechas arriba/abajo: entrada y salida de stock. */
+    private static class MoverIcon implements Icon {
+
+        @Override public int getIconWidth() { return 24; }
+        @Override public int getIconHeight() { return 24; }
+
+        @Override
+        public void paintIcon(Component c, Graphics g, int x, int y) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setColor(new Color(0xD96A29));
+            g2.setStroke(new BasicStroke(2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            g2.drawLine(x + 7, y + 20, x + 7, y + 4);
+            g2.drawPolyline(new int[]{x + 3, x + 7, x + 11}, new int[]{y + 8, y + 4, y + 8}, 3);
+            g2.drawLine(x + 17, y + 4, x + 17, y + 20);
+            g2.drawPolyline(new int[]{x + 13, x + 17, x + 21}, new int[]{y + 16, y + 20, y + 16}, 3);
             g2.dispose();
         }
     }

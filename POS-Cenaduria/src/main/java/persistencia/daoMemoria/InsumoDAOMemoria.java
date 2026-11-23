@@ -2,7 +2,6 @@ package persistencia.daoMemoria;
 
 import persistencia.entidades.Insumo;
 import persistencia.enums.CategoriaInsumo;
-import persistencia.enums.EstadoInsumo;
 import persistencia.excepciones.PersistenciaException;
 import persistencia.interfaces.IInsumoDAO;
 
@@ -45,17 +44,10 @@ public class InsumoDAOMemoria implements IInsumoDAO {
     }
 
     @Override
-    public List<Insumo> buscarPorEstado(EstadoInsumo estado) throws PersistenciaException {
-        return datos.values().stream()
-                .filter(i -> i.getEstadoInsumo() == estado)
-                .toList();
-    }
-
-    @Override
     public List<Insumo> buscarPorNombre(String nombre) throws PersistenciaException {
         String buscado = nombre.toLowerCase();
         return datos.values().stream()
-                .filter(i -> i.getNombreInsumo().toLowerCase().contains(buscado))
+                .filter(i -> i.getNombre().toLowerCase().contains(buscado))
                 .toList();
     }
 }

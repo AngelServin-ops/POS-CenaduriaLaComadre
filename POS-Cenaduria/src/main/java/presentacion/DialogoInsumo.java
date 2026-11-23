@@ -6,12 +6,15 @@ import javax.swing.border.EmptyBorder;
 import negocio.dtos.InsumoDTO;
 import persistencia.entidades.Insumo;
 import persistencia.enums.CategoriaInsumo;
+import persistencia.enums.MotivoMovimiento;
 import persistencia.enums.UnidadInsumo;
 
 /**
  * Pop up para agregar o actualizar un insumo.
  * Oscurece la pantalla de fondo mientras está abierto y devuelve un InsumoDTO
  * con los datos capturados, o null si el usuario canceló.
+ * Al actualizar también devuelve el motivo del cambio de cantidad, porque
+ * el stock solo cambia mediante movimientos (compra, consumo del día, merma o ajuste).
  */
 public class DialogoInsumo extends JDialog {
 
@@ -21,32 +24,47 @@ public class DialogoInsumo extends JDialog {
     private static final Color GRIS_TEXTO = new Color(0x666666);
     private static final Color BORDE_CAMPO = new Color(0xDDD5CE);
 
-    private static final Font TITULO = new Font("Georgia", Font.BOLD, 24);
-    private static final Font SUBTITULO = new Font("Georgia", Font.PLAIN, 12);
-    private static final Font ETIQUETA = new Font("Georgia", Font.PLAIN, 13);
-    private static final Font CAMPO = new Font("Segoe UI", Font.PLAIN, 13);
-    private static final Font BOTON = new Font("Segoe UI", Font.BOLD, 13);
+    // Mismas fuentes que Punto de venta
+    private static final Font TITULO = Estilos.TITULO;
+    private static final Font SUBTITULO = Estilos.SUBTITULO;
+    private static final Font ETIQUETA = Estilos.ETIQUETA.deriveFont(13f);
+    private static final Font CAMPO = Estilos.CAMPO;
+    private static final Font BOTON = Estilos.BOTON;
 
     private final JTextField txtNombre = new CampoTexto("Pechuga de pollo");
     private final JTextField txtCantidad = new CampoTexto("5");
-    private final JComboBox<UnidadInsumo> cbUnidad = new JComboBox<>(UnidadInsumo.values());
-    private final JComboBox<CategoriaInsumo> cbCategoria = new JComboBox<>(CategoriaInsumo.values());
+    private final JTextField txtStockMinimo = new CampoTexto("2");
+    private final JComboBox<MotivoMovimiento> cbMotivo = Estilos.combo(MotivoMovimiento.values(), DialogoInsumo::texto);
+    private final JComboBox<UnidadInsumo> cbUnidad = Estilos.combo(UnidadInsumo.values(), DialogoInsumo::texto);
+    private final JComboBox<CategoriaInsumo> cbCategoria = Estilos.combo(CategoriaInsumo.values(), DialogoInsumo::texto);
 
     private final Long idInsumo;   // null = agregar, con valor = actualizar
     private InsumoDTO resultado;   // queda en null si se cancela
 
+    /** Lo que devuelve el pop up al actualizar: los datos y el motivo si cambió la cantidad. */
+    public record Resultado(InsumoDTO insumo, MotivoMovimiento motivo) {
+    }
+
     // ------------------------------------------------------------ API pública
     /** Abre el pop up "Agregar Insumo". Devuelve null si se canceló. */
     public static InsumoDTO mostrarAgregar(Component padre) {
-        return mostrar(padre, null);
+        return mostrar(padre);
     }
 
     /** Abre el pop up "Actualizar Insumo" con los datos del insumo. Devuelve null si se canceló. */
-    public static InsumoDTO mostrarActualizar(Component padre, Insumo insumo) {
-        return mostrar(padre, insumo);
+    public static Resultado mostrarActualizar(Component padre, Insumo insumo) {
+        DialogoInsumo dialogo = mostrar(padre, insumo);
+        if (dialogo.resultado == null) {
+            return null;
+        }
+        return new Resultado(dialogo.resultado, (MotivoMovimiento) dialogo.cbMotivo.getSelectedItem());
     }
 
-    private static InsumoDTO mostrar(Component padre, Insumo insumo) {
+    private static InsumoDTO mostrar(Component padre) {
+        return mostrar(padre, null).resultado;
+    }
+
+    private static DialogoInsumo mostrar(Component padre, Insumo insumo) {
         Window ventana = SwingUtilities.getWindowAncestor(padre);
         DialogoInsumo dialogo = new DialogoInsumo(ventana, insumo);
 
@@ -64,7 +82,7 @@ public class DialogoInsumo extends JDialog {
             raiz.getGlassPane().setVisible(false);
             raiz.setGlassPane(glassAnterior);
         }
-        return dialogo.resultado;
+        return dialogo;
     }
 
     // ------------------------------------------------------------ Construcción
@@ -89,7 +107,7 @@ public class DialogoInsumo extends JDialog {
         gc.anchor = GridBagConstraints.NORTHWEST;
         gc.fill = GridBagConstraints.HORIZONTAL;
         gc.weightx = 1;
-        cuerpo.add(crearFormulario(), gc);
+        cuerpo.add(crearFormulario(esEdicion), gc);
 
         gc.weightx = 0;
         gc.anchor = GridBagConstraints.CENTER;
@@ -133,21 +151,26 @@ public class DialogoInsumo extends JDialog {
         return encabezado;
     }
 
-    private JPanel crearFormulario() {
+    private JPanel crearFormulario(boolean esEdicion) {
         JPanel form = new JPanel();
         form.setLayout(new BoxLayout(form, BoxLayout.Y_AXIS));
         form.setOpaque(false);
 
         estilizarCampo(txtNombre);
         estilizarCampo(txtCantidad);
+        estilizarCampo(txtStockMinimo);
         estilizarCombo(cbUnidad);
         estilizarCombo(cbCategoria);
+        estilizarCombo(cbMotivo);
 
-        cbUnidad.setRenderer(rendererTexto());
-        cbCategoria.setRenderer(rendererTexto());
+        cbMotivo.setSelectedItem(MotivoMovimiento.CONSUMO_JORNADA); // lo más común: cierre del día
 
         agregarCampo(form, "Nombre del Insumo", txtNombre);
-        agregarCampo(form, "Cantidad", txtCantidad);
+        agregarCampo(form, esEdicion ? "Cantidad actual (conteo)" : "Cantidad", txtCantidad);
+        if (esEdicion) {
+            agregarCampo(form, "Motivo del cambio de cantidad", cbMotivo);
+        }
+        agregarCampo(form, "Stock mínimo", txtStockMinimo);
         agregarCampo(form, "Unidad", cbUnidad);
         agregarCampo(form, "Categoría", cbCategoria);
         return form;
@@ -174,10 +197,10 @@ public class DialogoInsumo extends JDialog {
 
     // ------------------------------------------------------------ Lógica
     private void cargarDatos(Insumo insumo) {
-        txtNombre.setText(insumo.getNombreInsumo());
-        float s = insumo.getStock();
-        txtCantidad.setText(s == (long) s ? String.valueOf((long) s) : String.valueOf(s));
-        cbUnidad.setSelectedItem(insumo.getUnidadInsumo());
+        txtNombre.setText(insumo.getNombre());
+        txtCantidad.setText(textoNumero(insumo.getStock()));
+        txtStockMinimo.setText(textoNumero(insumo.getStockMinimo()));
+        cbUnidad.setSelectedItem(insumo.getUnidad());
         if (insumo.getCategoria() != null) {
             cbCategoria.setSelectedItem(insumo.getCategoria());
         }
@@ -190,25 +213,42 @@ public class DialogoInsumo extends JDialog {
             return;
         }
 
-        float cantidad;
-        try {
-            cantidad = Float.parseFloat(txtCantidad.getText().trim().replace(',', '.'));
-        } catch (NumberFormatException e) {
-            error("La cantidad debe ser un número.", txtCantidad);
+        Float cantidad = leerNumero(txtCantidad, "La cantidad");
+        if (cantidad == null) {
             return;
         }
-        if (cantidad < 0) {
-            error("La cantidad no puede ser negativa.", txtCantidad);
+        Float stockMinimo = leerNumero(txtStockMinimo, "El stock mínimo");
+        if (stockMinimo == null) {
             return;
         }
 
         UnidadInsumo unidad = (UnidadInsumo) cbUnidad.getSelectedItem();
         CategoriaInsumo categoria = (CategoriaInsumo) cbCategoria.getSelectedItem();
 
-        // El estado lo calcula InsumoService, por eso va en null
-        resultado = new InsumoDTO(idInsumo, nombre, cantidad, null,
-                unidad.name(), categoria.name(), null);
+        // El estado lo calcula EvaluadorStock, por eso va en null
+        resultado = new InsumoDTO(idInsumo, nombre, cantidad, stockMinimo, null,
+                unidad.name(), categoria.name(), true);
         dispose();
+    }
+
+    /** Lee un número no negativo del campo; muestra el error y devuelve null si no es válido. */
+    private Float leerNumero(JTextField campo, String nombreCampo) {
+        float valor;
+        try {
+            valor = Float.parseFloat(campo.getText().trim().replace(',', '.'));
+        } catch (NumberFormatException e) {
+            error(nombreCampo + " debe ser un número.", campo);
+            return null;
+        }
+        if (valor < 0) {
+            error(nombreCampo + " no puede ser negativo.", campo);
+            return null;
+        }
+        return valor;
+    }
+
+    private static String textoNumero(float n) {
+        return n == (long) n ? String.valueOf((long) n) : String.valueOf(n);
     }
 
     private void error(String mensaje, JComponent campo) {
@@ -260,20 +300,12 @@ public class DialogoInsumo extends JDialog {
         return b;
     }
 
-    private static DefaultListCellRenderer rendererTexto() {
-        return new DefaultListCellRenderer() {
-            @Override
-            public Component getListCellRendererComponent(JList<?> lista, Object valor, int i,
-                                                          boolean sel, boolean foco) {
-                return super.getListCellRendererComponent(lista, texto(valor), i, sel, foco);
-            }
-        };
-    }
-
     private static String texto(Object valor) {
         if (valor instanceof UnidadInsumo u) {
             return switch (u) {
                 case KG -> "kg";
+                case GRAMO -> "g";
+                case LITRO -> "L";
                 case PIEZA -> "pzs";
                 case PAQUETE -> "paquetes";
             };
@@ -282,6 +314,18 @@ public class DialogoInsumo extends JDialog {
             return switch (c) {
                 case CARNES -> "Carnes";
                 case VERDURAS -> "Verduras";
+                case LACTEOS -> "Lácteos";
+                case ABARROTES -> "Abarrotes";
+                case BEBIDAS -> "Bebidas";
+                case DESECHABLES -> "Desechables";
+            };
+        }
+        if (valor instanceof MotivoMovimiento m) {
+            return switch (m) {
+                case COMPRA -> "Compra (entra)";
+                case CONSUMO_JORNADA -> "Consumo del día (sale)";
+                case MERMA -> "Merma (sale)";
+                case AJUSTE -> "Ajuste de conteo";
             };
         }
         return valor == null ? "" : valor.toString();

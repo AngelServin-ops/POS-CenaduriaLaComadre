@@ -5,23 +5,31 @@ public class InsumoDTO {
     private Long id;
     private String nombre;
     private float stock;
+    private float stockMinimo;
+    // Calculado por EvaluadorStock; se ignora al registrar/actualizar
     private String estado;
     private String unidad;
     private String categoria;
-    private AdministradorDTO administrador;
+    private boolean activo = true;
 
     public InsumoDTO() {
     }
 
-    public InsumoDTO(Long id, String nombre, float stock, String estado,
-                     String unidad, String categoria, AdministradorDTO administrador) {
+    public InsumoDTO(Long id, String nombre, float stock, float stockMinimo, String estado,
+                     String unidad, String categoria, boolean activo) {
         this.id = id;
         this.nombre = nombre;
         this.stock = stock;
+        this.stockMinimo = stockMinimo;
         this.estado = estado;
         this.unidad = unidad;
         this.categoria = categoria;
-        this.administrador = administrador;
+        this.activo = activo;
+    }
+
+    /** Constructor para registrar un insumo nuevo. */
+    public InsumoDTO(String nombre, float stock, float stockMinimo, String unidad, String categoria) {
+        this(null, nombre, stock, stockMinimo, null, unidad, categoria, true);
     }
 
     public Long getId() {
@@ -48,6 +56,14 @@ public class InsumoDTO {
         this.stock = stock;
     }
 
+    public float getStockMinimo() {
+        return stockMinimo;
+    }
+
+    public void setStockMinimo(float stockMinimo) {
+        this.stockMinimo = stockMinimo;
+    }
+
     public String getEstado() {
         return estado;
     }
@@ -72,11 +88,11 @@ public class InsumoDTO {
         this.categoria = categoria;
     }
 
-    public AdministradorDTO getAdministrador() {
-        return administrador;
+    public boolean isActivo() {
+        return activo;
     }
 
-    public void setAdministrador(AdministradorDTO administrador) {
-        this.administrador = administrador;
+    public void setActivo(boolean activo) {
+        this.activo = activo;
     }
 }

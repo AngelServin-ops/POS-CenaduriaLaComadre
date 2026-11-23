@@ -1,21 +1,17 @@
 package persistencia.entidades;
 
 import jakarta.persistence.Column;
-import jakarta.persistence.DiscriminatorColumn;
-import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Inheritance;
-import jakarta.persistence.InheritanceType;
 import jakarta.persistence.Table;
+import persistencia.enums.RolUsuario;
 
 @Entity
 @Table(name = "usuarios")
-@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
-@DiscriminatorColumn(name = "tipo_usuario")
-@DiscriminatorValue("USUARIO")
 public class Usuario {
 
     @Id
@@ -25,20 +21,27 @@ public class Usuario {
     @Column(nullable = false, length = 100)
     private String nombre;
 
-    @Column(nullable = false, length = 30)
-    private String rol;
+    @Column(name = "nombre_usuario", nullable = false, unique = true, length = 50)
+    private String nombreUsuario;
+
+    // Nunca se guarda la contraseña en texto plano, solo su hash
+    @Column(name = "contrasena_hash", nullable = false, length = 255)
+    private String contrasenaHash;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private RolUsuario rol;
+
+    @Column(nullable = false)
+    private boolean activo = true;
 
     public Usuario() {
     }
 
-    public Usuario(String nombre, String rol) {
+    public Usuario(String nombre, String nombreUsuario, String contrasenaHash, RolUsuario rol) {
         this.nombre = nombre;
-        this.rol = rol;
-    }
-
-    public Usuario(Long id, String nombre, String rol) {
-        this.id = id;
-        this.nombre = nombre;
+        this.nombreUsuario = nombreUsuario;
+        this.contrasenaHash = contrasenaHash;
         this.rol = rol;
     }
 
@@ -58,12 +61,36 @@ public class Usuario {
         this.nombre = nombre;
     }
 
-    public String getRol() {
+    public String getNombreUsuario() {
+        return nombreUsuario;
+    }
+
+    public void setNombreUsuario(String nombreUsuario) {
+        this.nombreUsuario = nombreUsuario;
+    }
+
+    public String getContrasenaHash() {
+        return contrasenaHash;
+    }
+
+    public void setContrasenaHash(String contrasenaHash) {
+        this.contrasenaHash = contrasenaHash;
+    }
+
+    public RolUsuario getRol() {
         return rol;
     }
 
-    public void setRol(String rol) {
+    public void setRol(RolUsuario rol) {
         this.rol = rol;
+    }
+
+    public boolean isActivo() {
+        return activo;
+    }
+
+    public void setActivo(boolean activo) {
+        this.activo = activo;
     }
 
     @Override
@@ -71,7 +98,9 @@ public class Usuario {
         return "Usuario{" +
                 "id=" + id +
                 ", nombre='" + nombre + '\'' +
-                ", rol='" + rol + '\'' +
+                ", nombreUsuario='" + nombreUsuario + '\'' +
+                ", rol=" + rol +
+                ", activo=" + activo +
                 '}';
     }
 }

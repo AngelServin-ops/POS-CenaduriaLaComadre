@@ -6,20 +6,27 @@ public class MovimientoInsumoDTO {
 
     private Long id;
     private String tipo;
+    private String motivo;
     private LocalDateTime fecha;
     private float cantidad;
-    private InsumoDTO insumo;
+    private String observacion;
+    private Long idInsumo;
+    private String nombreInsumo;
+    private Long idUsuario;
+    private String nombreUsuario;
 
     public MovimientoInsumoDTO() {
     }
 
-    public MovimientoInsumoDTO(Long id, String tipo, LocalDateTime fecha,
-                               float cantidad, InsumoDTO insumo) {
-        this.id = id;
+    /** Constructor para registrar un movimiento nuevo. */
+    public MovimientoInsumoDTO(String tipo, String motivo, float cantidad, String observacion,
+                               Long idInsumo, Long idUsuario) {
         this.tipo = tipo;
-        this.fecha = fecha;
+        this.motivo = motivo;
         this.cantidad = cantidad;
-        this.insumo = insumo;
+        this.observacion = observacion;
+        this.idInsumo = idInsumo;
+        this.idUsuario = idUsuario;
     }
 
     public Long getId() {
@@ -38,6 +45,14 @@ public class MovimientoInsumoDTO {
         this.tipo = tipo;
     }
 
+    public String getMotivo() {
+        return motivo;
+    }
+
+    public void setMotivo(String motivo) {
+        this.motivo = motivo;
+    }
+
     public LocalDateTime getFecha() {
         return fecha;
     }
@@ -54,11 +69,43 @@ public class MovimientoInsumoDTO {
         this.cantidad = cantidad;
     }
 
-    public InsumoDTO getInsumo() {
-        return insumo;
+    public String getObservacion() {
+        return observacion;
     }
 
-    public void setInsumo(InsumoDTO insumo) {
-        this.insumo = insumo;
+    public void setObservacion(String observacion) {
+        this.observacion = observacion;
+    }
+
+    public Long getIdInsumo() {
+        return idInsumo;
+    }
+
+    public void setIdInsumo(Long idInsumo) {
+        this.idInsumo = idInsumo;
+    }
+
+    public String getNombreInsumo() {
+        return nombreInsumo;
+    }
+
+    public void setNombreInsumo(String nombreInsumo) {
+        this.nombreInsumo = nombreInsumo;
+    }
+
+    public Long getIdUsuario() {
+        return idUsuario;
+    }
+
+    public void setIdUsuario(Long idUsuario) {
+        this.idUsuario = idUsuario;
+    }
+
+    public String getNombreUsuario() {
+        return nombreUsuario;
+    }
+
+    public void setNombreUsuario(String nombreUsuario) {
+        this.nombreUsuario = nombreUsuario;
     }
 }

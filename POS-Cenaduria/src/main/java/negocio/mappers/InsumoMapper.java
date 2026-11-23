@@ -1,33 +1,34 @@
 package negocio.mappers;
 
 import negocio.dtos.InsumoDTO;
-import persistencia.entidades.Administrador;
 import persistencia.entidades.Insumo;
 import persistencia.enums.CategoriaInsumo;
+import persistencia.enums.EstadoInsumo;
 import persistencia.enums.UnidadInsumo;
 
 public class InsumoMapper {
 
-    public static InsumoDTO aDTO(Insumo insumo) {
+    public static InsumoDTO aDTO(Insumo insumo, EstadoInsumo estado) {
         return new InsumoDTO(
                 insumo.getId(),
-                insumo.getNombreInsumo(),
+                insumo.getNombre(),
                 insumo.getStock(),
-                insumo.getEstadoInsumo() != null ? insumo.getEstadoInsumo().name() : null,
-                insumo.getUnidadInsumo().name(),
+                insumo.getStockMinimo(),
+                estado != null ? estado.name() : null,
+                insumo.getUnidad().name(),
                 insumo.getCategoria().name(),
-                AdministradorMapper.aDTO(insumo.getAdministrador())
+                insumo.isActivo()
         );
     }
 
     // Lanza IllegalArgumentException o NullPointerException si unidad/categoría no son válidas
-    public static Insumo aEntidad(InsumoDTO dto, Administrador admin) {
+    public static Insumo aEntidad(InsumoDTO dto) {
         return new Insumo(
                 dto.getNombre(),
                 dto.getStock(),
+                dto.getStockMinimo(),
                 UnidadInsumo.valueOf(dto.getUnidad()),
-                CategoriaInsumo.valueOf(dto.getCategoria()),
-                admin
+                CategoriaInsumo.valueOf(dto.getCategoria())
         );
     }
 }

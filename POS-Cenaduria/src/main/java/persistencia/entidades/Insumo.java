@@ -7,13 +7,14 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import persistencia.enums.CategoriaInsumo;
-import persistencia.enums.EstadoInsumo;
 import persistencia.enums.UnidadInsumo;
 
+/**
+ * El estado (AGOTADO / BAJO / DISPONIBLE) no se guarda: lo calcula
+ * EvaluadorStock comparando stock contra stockMinimo.
+ */
 @Entity
 @Table(name = "insumos")
 public class Insumo {
@@ -22,50 +23,43 @@ public class Insumo {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "nombre_insumo", nullable = false, length = 100)
-    private String nombreInsumo;
+    @Column(nullable = false, length = 100)
+    private String nombre;
 
     @Column(nullable = false)
     private float stock;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "estado_insumo", length = 20)
-    private EstadoInsumo estadoInsumo;
+    @Column(name = "stock_minimo", nullable = false)
+    private float stockMinimo;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "unidad_insumo", nullable = false, length = 20)
-    private UnidadInsumo unidadInsumo;
+    @Column(nullable = false, length = 20)
+    private UnidadInsumo unidad;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     private CategoriaInsumo categoria;
 
-    // 1 Administrador -> * Insumo
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "id_administrador", nullable = false)
-    private Administrador administrador;
+    // Baja lógica: un insumo con movimientos no se borra, se desactiva
+    @Column(nullable = false)
+    private boolean activo = true;
 
     public Insumo() {
     }
 
-    public Insumo(Long id, String nombreInsumo, float stock, EstadoInsumo estadoInsumo, UnidadInsumo unidadInsumo,
-                  CategoriaInsumo categoria, Administrador administrador) {
-        this.id = id;
-        this.nombreInsumo = nombreInsumo;
+    public Insumo(String nombre, float stock, float stockMinimo,
+                  UnidadInsumo unidad, CategoriaInsumo categoria) {
+        this.nombre = nombre;
         this.stock = stock;
-        this.estadoInsumo = estadoInsumo;
-        this.unidadInsumo = unidadInsumo;
+        this.stockMinimo = stockMinimo;
+        this.unidad = unidad;
         this.categoria = categoria;
-        this.administrador = administrador;
     }
 
-    public Insumo(String nombreInsumo, float stock, UnidadInsumo unidadInsumo,
-                  CategoriaInsumo categoria, Administrador administrador) {
-        this.nombreInsumo = nombreInsumo;
-        this.stock = stock;
-        this.unidadInsumo = unidadInsumo;
-        this.categoria = categoria;
-        this.administrador = administrador;
+    public Insumo(Long id, String nombre, float stock, float stockMinimo,
+                  UnidadInsumo unidad, CategoriaInsumo categoria) {
+        this(nombre, stock, stockMinimo, unidad, categoria);
+        this.id = id;
     }
 
     public Long getId() {
@@ -76,12 +70,12 @@ public class Insumo {
         this.id = id;
     }
 
-    public String getNombreInsumo() {
-        return nombreInsumo;
+    public String getNombre() {
+        return nombre;
     }
 
-    public void setNombreInsumo(String nombreInsumo) {
-        this.nombreInsumo = nombreInsumo;
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
     }
 
     public float getStock() {
@@ -92,20 +86,20 @@ public class Insumo {
         this.stock = stock;
     }
 
-    public EstadoInsumo getEstadoInsumo() {
-        return estadoInsumo;
+    public float getStockMinimo() {
+        return stockMinimo;
     }
 
-    public void setEstadoInsumo(EstadoInsumo estadoInsumo) {
-        this.estadoInsumo = estadoInsumo;
+    public void setStockMinimo(float stockMinimo) {
+        this.stockMinimo = stockMinimo;
     }
 
-    public UnidadInsumo getUnidadInsumo() {
-        return unidadInsumo;
+    public UnidadInsumo getUnidad() {
+        return unidad;
     }
 
-    public void setUnidadInsumo(UnidadInsumo unidadInsumo) {
-        this.unidadInsumo = unidadInsumo;
+    public void setUnidad(UnidadInsumo unidad) {
+        this.unidad = unidad;
     }
 
     public CategoriaInsumo getCategoria() {
@@ -116,24 +110,24 @@ public class Insumo {
         this.categoria = categoria;
     }
 
-    public Administrador getAdministrador() {
-        return administrador;
+    public boolean isActivo() {
+        return activo;
     }
 
-    public void setAdministrador(Administrador administrador) {
-        this.administrador = administrador;
+    public void setActivo(boolean activo) {
+        this.activo = activo;
     }
 
     @Override
     public String toString() {
         return "Insumo{" +
                 "id=" + id +
-                ", nombreInsumo='" + nombreInsumo + '\'' +
+                ", nombre='" + nombre + '\'' +
                 ", stock=" + stock +
-                ", estadoInsumo=" + estadoInsumo +
-                ", unidadInsumo=" + unidadInsumo +
+                ", stockMinimo=" + stockMinimo +
+                ", unidad=" + unidad +
                 ", categoria=" + categoria +
-                ", administrador=" + administrador +
+                ", activo=" + activo +
                 '}';
     }
 }

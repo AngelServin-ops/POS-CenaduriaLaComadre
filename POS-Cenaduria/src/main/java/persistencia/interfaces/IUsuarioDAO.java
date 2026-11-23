@@ -14,5 +14,7 @@ public interface IUsuarioDAO {
 
     Optional<Usuario> buscarPorId(Long id) throws PersistenciaException;
 
+    Optional<Usuario> buscarPorNombreUsuario(String nombreUsuario) throws PersistenciaException;
+
     List<Usuario> listarTodos() throws PersistenciaException;
 }
