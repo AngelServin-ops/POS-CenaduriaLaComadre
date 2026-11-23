@@ -1,7 +1,0 @@
-Fuentes opcionales para que las pantallas se vean igual que el Figma.
-
-Descarguen de Google Fonts (licencia libre OFL) y copien aquí estos archivos:
-  - SourceSerif4-Regular.ttf y SourceSerif4-Bold.ttf  (https://fonts.google.com/specimen/Source+Serif+4)
-  - Inter-Regular.ttf e Inter-Bold.ttf                  (https://fonts.google.com/specimen/Inter)
-
-Si no están, Estilos usa Cambria / Segoe UI (vienen con Windows).
